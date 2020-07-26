@@ -1,5 +1,5 @@
 -module(gen_ga).
--export([new/2, init/1, step/1]).
+-export([new/2, step/1]).
 -export_type([ga/0]).
 
 -type genotype() :: any().
@@ -13,6 +13,7 @@
 
 -opaque ga() :: #ga{}.
 
+-callback init(pos_integer()) -> list(genotype()).
 -callback fitness(Genotype :: genotype()) -> fitness().
 -callback mutate(Genotype :: genotype()) -> genotype().
 -callback crossover(LeftParent :: genotype(),
@@ -22,11 +23,8 @@
           proplist:proplist()) -> ga().
 new(GAMod, Options) ->
     #ga{module=GAMod,
+        population=GAMod:init(proplists:get_value(population_size, Options, 100)),
         tournament_size=proplists:get_value(tournament_size, Options, 4)}.
-
--spec init(list(genotype())) -> ga().
-init(Population) ->
-    #ga{population=Population}.
 
 -spec step(ga()) -> ga().
 step(GAState=#ga{module=GAMod,
