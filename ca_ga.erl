@@ -1,6 +1,6 @@
 -module(ca_ga).
 -behavior(gen_ga).
--export([fitness/1, mutate/1, crossover/2]).
+-export([init/1, fitness/1, mutate/1, crossover/2]).
 
 -define(P_MUTATION, 0.05).
 -define(STATES, [0, 1, 2]).
@@ -54,9 +54,9 @@ generate_ics(NumICs) ->
 fitness(RuleTable) ->
     CARule = express(RuleTable),
     Results = [ evaluate(CARule, IC) || IC <- generate_ics(?NUM_ICS) ],
-    maps:foldl(fun(true, Acc) -> 1 + Acc;
-                  (false, Acc) -> Acc
-               end, Results) / length(Results).
+    lists:foldl(fun(true, Acc) -> 1 + Acc;
+                 (false, Acc) -> Acc
+              end, 0, Results) / length(Results).
 
 plurality(Map) ->
     sets:from_list(
@@ -82,20 +82,21 @@ is_solved(StartingPlurality, EndingPlurality) ->
 
 evaluate(Rule, InitialState) ->
     CAStart = ca:new(InitialState),
-    CAEnd = ca:iterate(
-              CAStart,
-              Rule,
-              ?RADIUS,
-              rand:normal(5*?CA_SIZE, ?CA_SIZE)),
+    CAEvolution = ca:iterate(
+                    CAStart,
+                    Rule,
+                    ?RADIUS,
+                    trunc(rand:normal(5*?CA_SIZE, ?CA_SIZE))),
+    CAEnd = lists:last(CAEvolution),
     StartingPlurality = plurality(ca:state_counts(CAStart)),
     EndingPlurality = plurality(ca:state_counts(CAEnd)),
     is_solved(StartingPlurality, EndingPlurality).
 
 mutate(RuleTable) ->
     lists:map(
-      fun (P, _) when P < ?P_MUTATION ->
+      fun ({P, _}) when P < ?P_MUTATION ->
               lists:nth(rand:uniform(length(?STATES)), ?STATES);
-          (_, T) ->
+          ({_, T}) ->
               T
       end,
       [ {rand:uniform_real(), Transition} || Transition <- RuleTable ]).
@@ -110,3 +111,10 @@ crossover(LeftRules, RightRules) ->
        Coin >= 0.5 ->
             RightBegin ++ LeftEnd
     end.
+
+random_rule() ->
+    [ lists:nth(rand:uniform(length(?STATES)), ?STATES)
+      || _ <- lists:seq(1, trunc(math:pow(length(?STATES), (?RADIUS * 2) + 1)))].
+
+init(NumGenomes) ->
+    [ random_rule() || _ <- lists:seq(1, NumGenomes) ].
