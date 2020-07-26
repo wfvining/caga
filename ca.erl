@@ -25,7 +25,7 @@ update(Cells, Rule, Radius) ->
                       || Center <- lists:seq(0, NumCells-1) ],
     array:from_list(lists:map(Rule, Neighborhoods)).
 
--spec iterate(ca(), rule(), radius(), pos_integer()) -> ca().
+-spec iterate(ca(), rule(), radius(), pos_integer()) -> list(ca()).
 iterate(Cells, Rule, Radius, Iterations) ->
     lists:reverse(
       lists:foldl(
